@@ -310,7 +310,7 @@ class DatabaseManager:
         # print the constructed table in console
         Console().print(table)
 
-    def genconfig(self, Name: str, output: pathlib.Path):
+    def genconfig(self, Name: str, output: pathlib.Path, strip_config: bool):
         database = self.read_database()
 
         # check if peer ID is specified
@@ -353,34 +353,35 @@ class DatabaseManager:
 
                 # generate [Peer] sections for all other peers
                 for p in [i for i in database["peers"] if i != peer]:
-                    config.write("\n[Peer]\n")
-                    config.write("# Name: {}\n".format(p))
-                    config.write(
-                        "PublicKey = {}\n".format(
-                            self.wireguard.pubkey(database["peers"][p]["PrivateKey"])
-                        )
-                    )
-
-                    if database["peers"][p].get("Endpoint") is not None:
+                    if not (strip_config and not database["peers"][peer]["ListenPort"] and not database["peers"][p]["Endpoint"]):
+                        config.write("\n[Peer]\n")
+                        config.write("# Name: {}\n".format(p))
                         config.write(
-                            "Endpoint = {}:{}\n".format(
-                                database["peers"][p]["Endpoint"],
-                                database["peers"][p]["ListenPort"],
+                            "PublicKey = {}\n".format(
+                                self.wireguard.pubkey(database["peers"][p]["PrivateKey"])
                             )
                         )
 
-                    if database["peers"][p].get("Address") is not None:
-                        if database["peers"][p].get("AllowedIPs") is not None:
-                            allowed_ips = ", ".join(
-                                database["peers"][p]["Address"]
-                                + database["peers"][p]["AllowedIPs"]
-                            )
-                        else:
-                            allowed_ips = ", ".join(database["peers"][p]["Address"])
-                        config.write("AllowedIPs = {}\n".format(allowed_ips))
-
-                    for key in PEER_OPTIONAL_ATTRIBUTES:
-                        if database["peers"][p].get(key) is not None:
+                        if database["peers"][p].get("Endpoint") is not None:
                             config.write(
-                                "{} = {}\n".format(key, database["peers"][p][key])
+                                "Endpoint = {}:{}\n".format(
+                                    database["peers"][p]["Endpoint"],
+                                    database["peers"][p]["ListenPort"],
+                                )
                             )
+
+                        if database["peers"][p].get("Address") is not None:
+                            if database["peers"][p].get("AllowedIPs") is not None:
+                                allowed_ips = ", ".join(
+                                    database["peers"][p]["Address"]
+                                    + database["peers"][p]["AllowedIPs"]
+                                )
+                            else:
+                                allowed_ips = ", ".join(database["peers"][p]["Address"])
+                            config.write("AllowedIPs = {}\n".format(allowed_ips))
+
+                        for key in PEER_OPTIONAL_ATTRIBUTES:
+                            if database["peers"][p].get(key) is not None:
+                                config.write(
+                                    "{} = {}\n".format(key, database["peers"][p][key])
+                                )

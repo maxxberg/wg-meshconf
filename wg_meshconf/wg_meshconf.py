@@ -123,6 +123,13 @@ def parse_arguments():
         nargs="?",
     )
     genconfig.add_argument(
+        "--strip",
+        help="Omit peers with no endpoint, except Interface has an Endpoint.\
+            This reduces config size for roaming clients.",
+        default=False,
+        action="store_true"
+    )
+    genconfig.add_argument(
         "-o",
         "--output",
         help="configuration file output directory",
@@ -190,7 +197,7 @@ def main():
         database_manager.showpeers(args.name, args.verbose)
 
     elif args.command == "genconfig":
-        database_manager.genconfig(args.name, args.output)
+        database_manager.genconfig(args.name, args.output, args.strip)
 
     # if no commands are specified
     else:
